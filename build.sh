@@ -26,7 +26,7 @@ check_commands() {
 
 # 创建输出目录
 if [ ! -d "./out/" ]; then
-    mkdir -p out
+    mkdir -p out out/boot out/kernel out/lib out/lib/kernel out/lib/user
 fi
 
 # 创建系统镜像文件（如果不存在）
@@ -75,20 +75,25 @@ if ! check_commands gcc nasm ld dd bochs; then
     fi
 fi
 
+# 编译库文件
+cd lib/kernel
+nasm -f elf -o ../../out/lib/kernel/print.o ./print.asm
+cd ../..
+
 # 编译内核
-gcc -m32 -c -o ./out/main.o ./kernel/main.c
-ld -m elf_i386 -Ttext 0xc0001500 -e main -o ./out/kernel.bin ./out/main.o
+gcc -m32 -c -o ./out/kernel/main.o ./kernel/main.c -nostdlib -nostdinc -nodefaultlibs -I"./lib/" -I"./lib/kernel/" -I"./lib/user/" -I"./lib/kernel/config/"
+ld -m elf_i386 -Ttext 0xc0001500 -e main -o ./out/kernel/kernel.bin ./out/kernel/main.o ./out/lib/kernel/print.o 
 
 # 编译引导程序
 cd boot || exit 1
-nasm -o ../out/mbr.bin ./mbr.asm
-nasm -o ../out/loader.bin ./loader.asm
+nasm -o ../out/boot/mbr.bin ./mbr.asm
+nasm -o ../out/boot/loader.bin ./loader.asm
 cd .. || exit 1
 
 # 写入镜像文件
-dd if=./out/mbr.bin of=./sys.img count=1 conv=notrunc bs=512
-dd if=./out/loader.bin of=./sys.img count=4 seek=2 conv=notrunc bs=512
-dd if=./out/kernel.bin of=./sys.img count=200 seek=9 conv=notrunc bs=512
+dd if=./out/boot/mbr.bin of=./sys.img count=1 conv=notrunc bs=512
+dd if=./out/boot/loader.bin of=./sys.img count=4 seek=2 conv=notrunc bs=512
+dd if=./out/kernel/kernel.bin of=./sys.img count=200 seek=9 conv=notrunc bs=512
 
 # 检查是否传入"run"参数
 for arg in "$@"; do
