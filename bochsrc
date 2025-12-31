@@ -21,4 +21,4 @@ keyboard: type=mf, serial_delay=250
  
 # 设置硬盘
 ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
-ata0-master: type=disk, path="hd60M.img", mode=flat
+ata0-master: type=disk, path="sys.img", mode=flat
